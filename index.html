@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Construction Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --panel: #13161d;
+    --panel2: #1a1e28;
+    --border: #252a38;
+    --accent: #f59e0b;
+    --accent2: #3b82f6;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --warning: #f97316;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --subtle: #374151;
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body: 'Barlow', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    display: flex;
+    overflow-x: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 240px;
+    min-height: 100vh;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    z-index: 100;
+    transition: transform 0.3s;
+  }
+
+  .sidebar-logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo .logo-mark {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 800; font-size: 18px; color: #000;
+  }
+  .logo-text { font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+  .logo-sub { font-size: 11px; color: var(--muted); margin-top: 2px; letter-spacing: 1px; text-transform: uppercase; }
+
+  .sidebar-nav { flex: 1; padding: 16px 0; overflow-y: auto; }
+  .nav-section { padding: 8px 16px 4px; font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    font-size: 14px; font-weight: 500; color: var(--muted);
+  }
+  .nav-item:hover { background: var(--panel2); color: var(--text); }
+  .nav-item.active { border-left-color: var(--accent); background: rgba(245,158,11,0.08); color: var(--accent); }
+  .nav-item .nav-icon { font-size: 18px; width: 20px; text-align: center; }
+  .nav-badge { margin-left: auto; background: var(--accent); color: #000; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .user-pill {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--panel2);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .user-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; color: #fff;
+  }
+  .user-info .user-name { font-size: 13px; font-weight: 600; }
+  .user-info .user-role { font-size: 11px; color: var(--muted); }
+
+  /* MAIN */
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    height: 64px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .topbar-time { font-family: var(--font-display); font-size: 18px; font-weight: 600; color: var(--muted); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 7px; border: none; cursor: pointer; font-family: var(--font-body); font-size: 13px; font-weight: 600; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: #d97706; }
+  .btn-secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-danger { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+  .btn-success { background: rgba(34,197,94,0.15); color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .hamburger { display: none; background: none; border: none; color: var(--text); font-size: 22px; cursor: pointer; }
+
+  /* CONTENT */
+  .content { padding: 28px; flex: 1; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-animate { animation: fadeUp 0.25s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* STAT CARDS */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative; overflow: hidden;
+    transition: transform 0.15s;
+  }
+  .stat-card:hover { transform: translateY(-2px); }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .stat-card.amber::before { background: var(--accent); }
+  .stat-card.blue::before { background: var(--accent2); }
+  .stat-card.green::before { background: var(--success); }
+  .stat-card.orange::before { background: var(--warning); }
+  .stat-card.red::before { background: var(--danger); }
+  .stat-icon { font-size: 28px; margin-bottom: 10px; }
+  .stat-val { font-family: var(--font-display); font-size: 40px; font-weight: 800; line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+  .stat-trend { font-size: 11px; margin-top: 8px; }
+  .trend-up { color: var(--success); }
+  .trend-down { color: var(--danger); }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  /* CARD */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { font-family: var(--font-display); font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
+  .card-body { padding: 20px; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: var(--panel2);
+    padding: 11px 16px;
+    text-align: left;
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: var(--panel2); }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 12px 16px; vertical-align: middle; }
+
+  /* BADGE */
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge-present { background: rgba(34,197,94,0.15); color: var(--success); }
+  .badge-absent { background: rgba(239,68,68,0.15); color: var(--danger); }
+  .badge-late { background: rgba(249,115,22,0.15); color: var(--warning); }
+  .badge-out { background: rgba(107,114,128,0.2); color: var(--muted); }
+  .badge-admin { background: rgba(245,158,11,0.15); color: var(--accent); }
+  .badge-super { background: rgba(59,130,246,0.15); color: var(--accent2); }
+  .badge-viewer { background: rgba(107,114,128,0.15); color: var(--muted); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .dot-green { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .dot-red { background: var(--danger); }
+  .dot-orange { background: var(--warning); }
+  .dot-gray { background: var(--muted); }
+
+  /* SEARCH */
+  .search-wrap { position: relative; }
+  .search-input {
+    width: 100%; padding: 12px 16px 12px 44px;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 18px; }
+  .search-results {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    z-index: 200;
+    max-height: 280px;
+    overflow-y: auto;
+    display: none;
+  }
+  .search-results.open { display: block; }
+  .search-result-item {
+    padding: 11px 16px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .search-result-item:hover { background: var(--border); }
+  .search-result-item:last-child { border-bottom: none; }
+  .sr-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--warning));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: #000; flex-shrink: 0;
+  }
+  .sr-name { font-weight: 600; font-size: 13px; }
+  .sr-meta { font-size: 11px; color: var(--muted); }
+
+  /* FORM */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+  input, select, textarea {
+    padding: 10px 14px;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select option { background: var(--panel2); }
+  textarea { resize: vertical; min-height: 80px; }
+  .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 100%; max-width: 640px;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: scale(0.95); transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+  .modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; transition: color 0.15s; }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* WORKER PROFILE CARD */
+  .worker-profile-header {
+    display: flex; align-items: center; gap: 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(59,130,246,0.05));
+    border-bottom: 1px solid var(--border);
+  }
+  .worker-avatar-lg {
+    width: 70px; height: 70px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--warning));
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-weight: 800; font-size: 28px; color: #000;
+    flex-shrink: 0;
+    border: 3px solid var(--accent);
+  }
+  .worker-profile-info .worker-name { font-family: var(--font-display); font-size: 24px; font-weight: 800; }
+  .worker-profile-info .worker-id { font-size: 12px; color: var(--muted); font-family: monospace; letter-spacing: 1px; }
+  .worker-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .meta-item { }
+  .meta-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+  .meta-val { font-size: 14px; font-weight: 500; margin-top: 2px; }
+
+  /* TIMELINE */
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .timeline-item { display: flex; gap: 14px; padding-bottom: 16px; position: relative; }
+  .timeline-item::before { content: ''; position: absolute; left: 15px; top: 32px; bottom: 0; width: 1px; background: var(--border); }
+  .timeline-item:last-child::before { display: none; }
+  .tl-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; border: 2px solid; }
+  .tl-dot.in { background: rgba(34,197,94,0.1); border-color: var(--success); color: var(--success); }
+  .tl-dot.out { background: rgba(107,114,128,0.1); border-color: var(--muted); color: var(--muted); }
+  .tl-dot.item { background: rgba(245,158,11,0.1); border-color: var(--accent); color: var(--accent); }
+  .tl-content { flex: 1; }
+  .tl-title { font-weight: 600; font-size: 13px; }
+  .tl-time { font-size: 11px; color: var(--muted); }
+
+  /* TABS */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .tab { padding: 11px 20px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* FILTER BAR */
+  .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  .filter-select {
+    padding: 8px 12px;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text);
+    font-family: var(--font-body); font-size: 12px; font-weight: 600;
+    outline: none; cursor: pointer;
+    min-width: 140px;
+  }
+
+  /* PROGRESS BAR */
+  .progress-bar { height: 6px; background: var(--panel2); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.5s; }
+
+  /* CHARTS */
+  .chart-container { position: relative; height: 220px; }
+
+  /* ITEMS TRACKER */
+  .items-list { display: flex; flex-direction: column; gap: 10px; }
+  .item-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--panel2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .item-info { display: flex; align-items: center; gap: 12px; }
+  .item-icon { font-size: 20px; }
+  .item-name { font-weight: 600; font-size: 13px; }
+  .item-meta { font-size: 11px; color: var(--muted); }
+  .item-status { display: flex; align-items: center; gap: 8px; }
+
+  /* NOTIFICATION */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 18px;
+    display: flex; align-items: center; gap: 12px;
+    z-index: 1000; transform: translateY(100px); opacity: 0;
+    transition: all 0.3s; max-width: 340px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-icon { font-size: 22px; }
+  .toast-msg { font-size: 13px; font-weight: 500; }
+
+  /* REPORT */
+  .report-section { margin-bottom: 24px; }
+  .report-heading { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-label { color: var(--muted); }
+  .summary-val { font-weight: 600; }
+
+  /* PRINT */
+  @media print {
+    .sidebar, .topbar, .no-print { display: none !important; }
+    .main { margin-left: 0; }
+    .content { padding: 0; }
+    body { background: white; color: black; }
+    .card { border: 1px solid #ddd; }
+    .card-title { color: black; }
+    td, th { color: black; border: 1px solid #eee; }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; }
+    .hamburger { display: block; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 500px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .content { padding: 16px; }
+  }
+
+  .sidebar-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 99; display: none;
+  }
+  .sidebar-overlay.open { display: block; }
+
+  /* LOGIN */
+  .login-page {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999;
+  }
+  .login-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    width: 100%; max-width: 400px;
+  }
+  .login-logo { text-align: center; margin-bottom: 32px; }
+  .login-logo .logo-icon { width: 52px; height: 52px; font-size: 26px; margin: 0 auto 12px; }
+  .login-logo .logo-text { font-size: 28px; }
+  .login-form { display: flex; flex-direction: column; gap: 14px; }
+  .login-form input { font-size: 14px; padding: 12px 16px; }
+  .login-form .btn { width: 100%; justify-content: center; padding: 13px; font-size: 15px; }
+  .login-hint { font-size: 12px; color: var(--muted); text-align: center; margin-top: 8px; }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; }
+  .empty-msg { font-size: 14px; }
+
+  .id-badge {
+    display: inline-block;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 8px;
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  .actions-col { display: flex; gap: 6px; }
+
+  /* Checkin animation */
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+  .live-dot { animation: pulse 2s infinite; }
+
+  .attendance-bar {
+    display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px;
+    margin: 8px 0;
+  }
+  .abar-present { background: var(--success); }
+  .abar-late { background: var(--warning); }
+  .abar-absent { background: var(--danger); }
+
+  .qr-display {
+    background: white; border-radius: 8px;
+    padding: 16px; text-align: center;
+    margin: 0 auto; width: fit-content;
+  }
+  .qr-grid {
+    display: grid; grid-template-columns: repeat(10, 12px);
+    gap: 1px;
+  }
+  .qr-cell { width: 12px; height: 12px; border-radius: 1px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-page" id="loginPage">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-icon">JW</div>
+      <div class="logo-text">Construction Manager</div>
+      <div class="logo-sub">Construction</div>
+    </div>
+    <div class="login-form">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="loginUser" placeholder="admin" value="admin">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="••••••••" value="admin123">
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()">🔐 Sign In</button>
+    </div>
+    <div class="login-hint">Demo: admin / admin123 &nbsp;|&nbsp; supervisor / super123 &nbsp;|&nbsp; viewer / view123</div>
+  </div>
+</div>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon">JW</div>
+      <div>
+        <div class="logo-text">ConstructionMAnger</div>
+        <div class="logo-sub">Workforce Mgmt</div>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Main</div>
+    <div class="nav-item active" onclick="showPage('dashboard')">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('workers')">
+      <span class="nav-icon">👷</span> Workers
+      <span class="nav-badge" id="workerCount">0</span>
+    </div>
+    <div class="nav-item" onclick="showPage('attendance')">
+      <span class="nav-icon">✅</span> Attendance
+    </div>
+    <div class="nav-section">Management</div>
+    <div class="nav-item" onclick="showPage('items')">
+      <span class="nav-icon">🔧</span> Items Tracker
+    </div>
+    <div class="nav-item" onclick="showPage('search')">
+      <span class="nav-icon">🔍</span> Search / Lookup
+    </div>
+    <div class="nav-section">Reports</div>
+    <div class="nav-item" onclick="showPage('reports')">
+      <span class="nav-icon">📋</span> Daily Reports
+    </div>
+    <div class="nav-section">Admin</div>
+    <div class="nav-item admin-only" onclick="showPage('users')">
+      <span class="nav-icon">👥</span> User Management
+    </div>
+    <div class="nav-item" onclick="showPage('audit')">
+      <span class="nav-icon">🛡️</span> Audit Trail
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-pill" onclick="doLogout()">
+      <div class="user-avatar" id="sidebarUserAvatar">A</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebarUserName">Admin</div>
+        <div class="user-role" id="sidebarUserRole">Administrator</div>
+      </div>
+      <span style="margin-left:auto;color:var(--muted);font-size:14px;">↩</span>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <div class="page-title" id="pageTitle">Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-time" id="clockDisplay">00:00:00</div>
+      <button class="btn btn-primary no-print" onclick="openModal('addWorkerModal')" id="addWorkerBtn">+ Add Worker</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active page-animate" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card amber">
+          <div class="stat-icon">👷</div>
+          <div class="stat-val" id="st-total">0</div>
+          <div class="stat-label">Total Workers</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">✅</div>
+          <div class="stat-val" id="st-present">0</div>
+          <div class="stat-label">On Site Now</div>
+          <div class="stat-trend trend-up"><span class="dot dot-green live-dot"></span> Live</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon">🚪</div>
+          <div class="stat-val" id="st-out">0</div>
+          <div class="stat-label">Checked Out</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-icon">⏰</div>
+          <div class="stat-val" id="st-late">0</div>
+          <div class="stat-label">Late Arrivals</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon">❌</div>
+          <div class="stat-val" id="st-absent">0</div>
+          <div class="stat-label">Absent Today</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-icon">🔧</div>
+          <div class="stat-val" id="st-items">0</div>
+          <div class="stat-label">Items Issued Today</div>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📈 Weekly Attendance</div>
+          </div>
+          <div class="card-body">
+            <div class="chart-container"><canvas id="attendanceChart"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🏗️ Congregation Breakdown</div>
+          </div>
+          <div class="card-body">
+            <div class="chart-container"><canvas id="congregationChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🕐 Today's Activity Feed</div>
+          <span class="badge badge-present"><span class="dot dot-green live-dot"></span> Live</span>
+        </div>
+        <div class="card-body">
+          <div class="timeline" id="activityFeed"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKERS -->
+    <div class="page page-animate" id="page-workers">
+      <div class="filter-bar">
+        <div class="search-wrap" style="flex:1;min-width:200px;">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" placeholder="Search workers..." id="workerSearchInput" oninput="filterWorkers()">
+        </div>
+        <select class="filter-select" id="workerFilterCong" onchange="filterWorkers()">
+          <option value="">All Congregations</option>
+        </select>
+        <select class="filter-select" id="workerFilterStatus" onchange="filterWorkers()">
+          <option value="">All Statuses</option>
+          <option value="present">Present</option>
+          <option value="out">Checked Out</option>
+          <option value="absent">Absent</option>
+          <option value="late">Late</option>
+        </select>
+        <button class="btn btn-primary no-print" onclick="openModal('addWorkerModal')">+ Add Worker</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Worker</th>
+                <th>ID</th>
+                <th>Congregation</th>
+                <th>Contact</th>
+                <th>Age</th>
+                <th>Status</th>
+                <th>Check In</th>
+                <th>Items</th>
+                <th class="no-print">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="workersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div class="page page-animate" id="page-attendance">
+      <div class="filter-bar">
+        <input type="date" id="attDate" class="filter-select" style="min-width:160px;" onchange="renderAttendance()">
+        <select class="filter-select" id="attFilterCong" onchange="renderAttendance()">
+          <option value="">All Congregations</option>
+        </select>
+        <select class="filter-select" id="attFilterStatus" onchange="renderAttendance()">
+          <option value="">All Statuses</option>
+          <option value="present">Present</option>
+          <option value="out">Checked Out</option>
+          <option value="absent">Absent</option>
+          <option value="late">Late</option>
+        </select>
+      </div>
+      <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px;">
+        <div class="stat-card green"><div class="stat-val" id="att-present">0</div><div class="stat-label">Present</div></div>
+        <div class="stat-card orange"><div class="stat-val" id="att-late">0</div><div class="stat-label">Late</div></div>
+        <div class="stat-card red"><div class="stat-val" id="att-absent">0</div><div class="stat-label">Absent</div></div>
+        <div class="stat-card blue"><div class="stat-val" id="att-hours">0h</div><div class="stat-label">Avg Hours</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Attendance Register</div>
+          <div style="display:flex;gap:8px;" class="no-print">
+            <button class="btn btn-secondary btn-sm" onclick="bulkCheckin()">⚡ Bulk Check-In</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Worker</th>
+                <th>ID</th>
+                <th>Congregation</th>
+                <th>Check In</th>
+                <th>Check Out</th>
+                <th>Hours</th>
+                <th>Status</th>
+                <th class="no-print">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="attendanceTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITEMS TRACKER -->
+    <div class="page page-animate" id="page-items">
+      <div class="filter-bar">
+        <input class="search-input" style="max-width:300px;padding-left:16px;" placeholder="Search items or workers..." id="itemSearch" oninput="filterItems()">
+        <select class="filter-select" id="itemFilterWorker" onchange="filterItems()">
+          <option value="">All Workers</option>
+        </select>
+        <button class="btn btn-primary no-print" onclick="openModal('issueItemModal')">+ Issue Item</button>
+      </div>
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="stat-card amber"><div class="stat-val" id="items-total">0</div><div class="stat-label">Total Items Issued</div></div>
+        <div class="stat-card green"><div class="stat-val" id="items-returned">0</div><div class="stat-label">Items Returned</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">🔧 Items Registry</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Worker</th>
+                <th>Issued On</th>
+                <th>Quantity</th>
+                <th>Status</th>
+                <th>Notes</th>
+                <th class="no-print">Action</th>
+              </tr>
+            </thead>
+            <tbody id="itemsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEARCH -->
+    <div class="page page-animate" id="page-search">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-body">
+          <div style="text-align:center;margin-bottom:20px;">
+            <div style="font-family:var(--font-display);font-size:28px;font-weight:800;">⚡ VLOOKUP-Style Search</div>
+            <div style="color:var(--muted);font-size:14px;margin-top:4px;">Search by Name, Worker ID, Contact Number, or Congregation</div>
+          </div>
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input class="search-input" style="font-size:18px;padding:16px 16px 16px 52px;" placeholder="Type to search instantly..." id="vlookupInput" oninput="doVlookup()" autocomplete="off">
+            <div class="search-results" id="vlookupResults"></div>
+          </div>
+        </div>
+      </div>
+      <div id="workerProfileSection" style="display:none;">
+        <div class="card">
+          <div class="worker-profile-header" id="profileHeader"></div>
+          <div class="card-body">
+            <div class="tabs">
+              <div class="tab active" onclick="switchProfileTab('info', this)">👤 Profile</div>
+              <div class="tab" onclick="switchProfileTab('attendance', this)">✅ Attendance</div>
+              <div class="tab" onclick="switchProfileTab('items', this)">🔧 Items</div>
+              <div class="tab" onclick="switchProfileTab('qr', this)">📱 QR Code</div>
+            </div>
+            <div id="profileInfo"></div>
+            <div id="profileAttendance" style="display:none;"></div>
+            <div id="profileItems" style="display:none;"></div>
+            <div id="profileQr" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="page page-animate" id="page-reports">
+      <div class="filter-bar no-print">
+        <input type="date" id="reportDate" class="filter-select" style="min-width:160px;">
+        <select class="filter-select" id="reportCong">
+          <option value="">All Congregations</option>
+        </select>
+        <button class="btn btn-primary" onclick="generateReport()">📊 Generate Report</button>
+        <button class="btn btn-secondary" onclick="window.print()">🖨️ Print</button>
+        <button class="btn btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
+      </div>
+      <div id="reportOutput"></div>
+    </div>
+
+    <!-- USERS -->
+    <div class="page page-animate" id="page-users">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👥 System Users</div>
+          <button class="btn btn-primary btn-sm no-print" onclick="openModal('addUserModal')">+ Add User</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Username</th><th>Role</th><th>Last Login</th><th class="no-print">Actions</th></tr>
+            </thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUDIT -->
+    <div class="page page-animate" id="page-audit">
+      <div class="card">
+        <div class="card-header"><div class="card-title">🛡️ Audit Trail</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Time</th><th>User</th><th>Action</th><th>Details</th></tr>
+            </thead>
+            <tbody id="auditTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- MODALS -->
+<!-- Add Worker Modal -->
+<div class="modal-overlay" id="addWorkerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">👷 Register New Worker</div>
+      <button class="modal-close" onclick="closeModal('addWorkerModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input type="text" id="wName" placeholder="John Doe">
+        </div>
+        <div class="form-group">
+          <label>Congregation *</label>
+          <input type="text" id="wCong" placeholder="e.g. North Side Congregation" list="congList">
+          <datalist id="congList"></datalist>
+        </div>
+        <div class="form-group">
+          <label>Contact Number *</label>
+          <input type="tel" id="wContact" placeholder="+260 977 000000">
+        </div>
+        <div class="form-group">
+          <label>Age</label>
+          <input type="number" id="wAge" placeholder="25" min="16" max="80">
+        </div>
+        <div class="form-group full">
+          <label>Initial Items / Equipment</label>
+          <input type="text" id="wItems" placeholder="e.g. Hard hat, Safety vest, Hammer">
+        </div>
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea id="wNotes" placeholder="Any additional notes..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('addWorkerModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addWorker()">✔ Register Worker</button>
+    </div>
+  </div>
+</div>
+
+<!-- Issue Item Modal -->
+<div class="modal-overlay" id="issueItemModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🔧 Issue Item to Worker</div>
+      <button class="modal-close" onclick="closeModal('issueItemModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Worker *</label>
+          <select id="issueWorker">
+            <option value="">Select worker...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Item Name *</label>
+          <input type="text" id="issueName" placeholder="e.g. Safety Helmet">
+        </div>
+        <div class="form-group">
+          <label>Quantity</label>
+          <input type="number" id="issueQty" value="1" min="1">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="issueCat">
+            <option>Safety Gear</option>
+            <option>Tools</option>
+            <option>Equipment</option>
+            <option>Materials</option>
+            <option>Clothing</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea id="issueNotes" placeholder="Condition, remarks..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('issueItemModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="issueItem()">✔ Issue Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal-overlay" id="addUserModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">👤 Add System User</div>
+      <button class="modal-close" onclick="closeModal('addUserModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="uName" placeholder="Jane Smith">
+        </div>
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="uUser" placeholder="jsmith">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="uPass" placeholder="••••••••">
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <select id="uRole">
+            <option value="admin">Administrator</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="viewer">Viewer</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('addUserModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addUser()">✔ Add User</button>
+    </div>
+  </div>
+</div>
+
+<!-- Worker Profile Modal -->
+<div class="modal-overlay" id="workerProfileModal">
+  <div class="modal" style="max-width:700px;">
+    <div class="modal-header">
+      <div class="modal-title">👷 Worker Profile</div>
+      <button class="modal-close" onclick="closeModal('workerProfileModal')">✕</button>
+    </div>
+    <div id="workerProfileModalBody"></div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="deleteWorkerModal">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header" style="border-bottom-color:rgba(239,68,68,0.3);">
+      <div class="modal-title" style="color:var(--danger);">⚠️ Delete Worker</div>
+      <button class="modal-close" onclick="closeModal('deleteWorkerModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="deleteWorkerPreview" style="display:flex;align-items:center;gap:16px;padding:16px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;margin-bottom:20px;">
+        <div class="worker-avatar-lg" id="deleteWorkerAvatar" style="width:52px;height:52px;font-size:22px;border-color:var(--danger);background:linear-gradient(135deg,var(--danger),#b91c1c);"></div>
+        <div>
+          <div id="deleteWorkerName" style="font-family:var(--font-display);font-size:20px;font-weight:800;"></div>
+          <div id="deleteWorkerMeta" style="font-size:12px;color:var(--muted);margin-top:3px;"></div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:16px;">
+        This action <strong style="color:var(--text);">cannot be undone</strong>. Deleting this worker will permanently remove their profile, attendance records, and all associated item logs from the system.
+      </div>
+      <div id="deleteWorkerItemsWarning" style="display:none;padding:10px 14px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.25);border-radius:8px;font-size:12px;color:var(--warning);margin-bottom:16px;">
+        ⚠️ This worker has <strong id="deleteWorkerItemCount"></strong> item(s) currently issued. They will also be removed.
+      </div>
+      <div style="margin-bottom:6px;">
+        <label style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;">Type the worker's name to confirm</label>
+        <input type="text" id="deleteConfirmInput" placeholder="" oninput="checkDeleteConfirm()" style="margin-top:8px;width:100%;border-color:var(--border);">
+      </div>
+    </div>
+    <div class="modal-footer" style="border-top-color:rgba(239,68,68,0.2);">
+      <button class="btn btn-secondary" onclick="closeModal('deleteWorkerModal')">Cancel</button>
+      <button class="btn" id="deleteConfirmBtn" onclick="confirmDeleteWorker()" disabled style="background:rgba(239,68,68,0.15);color:var(--danger);border:1px solid rgba(239,68,68,0.3);opacity:0.4;cursor:not-allowed;">🗑 Delete Permanently</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toastIcon">✅</span>
+  <span class="toast-msg" id="toastMsg"></span>
+</div>
+
+<script>
+// ==================== STATE ====================
+let currentUser = null;
+let workers = [];
+let items = [];
+let systemUsers = [];
+let auditLog = [];
+let attendanceOverrides = {};
+let selectedProfileId = null;
+
+const ROLES = { admin: 'Administrator', supervisor: 'Supervisor', viewer: 'Viewer' };
+
+// ==================== INIT DATA ====================
+function initData() {
+  systemUsers = [
+    { id: 'u1', name: 'Super Admin', username: 'admin', password: 'admin123', role: 'admin', lastLogin: new Date().toLocaleString() },
+    { id: 'u2', name: 'Site Supervisor', username: 'supervisor', password: 'super123', role: 'supervisor', lastLogin: 'Never' },
+    { id: 'u3', name: 'Office Viewer', username: 'viewer', password: 'view123', role: 'viewer', lastLogin: 'Never' },
+  ];
+
+  const congregations = ['Lusaka Bauleni Congregation','Lusaka Bauleni North Congregation', 'Lusaka South Congregation', 'Lusaka East Congregation', 'Lusaka West Congregation', 'Lusaka Bauleni Central Congregation', 'Lusaka Bauleni Middle-West Congregation','Lusaka Bauleni Overspill Congregation'];
+  const names = ['', 'Grace Mwale', 'Peter Phiri', 'Mary Zulu', 'John Tembo', 'Ruth Ngoma', 'David Mbewe', 'Sarah Lungu', 'Paul Chirwa', 'Esther Kamanga', 'Moses Nkosi', 'Rebecca Daka'];
+  const now = new Date();
+
+  workers = names.map((name, i) => {
+    const checkin = new Date(now);
+    checkin.setHours(6 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 60));
+    const isLate = checkin.getHours() >= 8;
+    const isOut = Math.random() > 0.5 && checkin.getHours() < now.getHours();
+    const checkout = isOut ? new Date(checkin.getTime() + (5 + Math.random() * 4) * 3600000) : null;
+    const absent = Math.random() < 0.15;
+
+    return {
+      id: 'BF' + String(1001 + i).padStart(4, '0'),
+      name,
+      congregation: congregations[i % congregations.length],
+      contact: '+260 9' + String(Math.floor(Math.random() * 90000000 + 10000000)),
+      age: 20 + Math.floor(Math.random() * 30),
+      notes: '',
+      registeredOn: new Date(now.getTime() - Math.random() * 30 * 86400000).toLocaleDateString(),
+      checkin: absent ? null : checkin.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      checkout: absent ? null : (isOut ? checkout.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null),
+      status: absent ? 'absent' : (isOut ? 'out' : (isLate ? 'late' : 'present')),
+      items: [],
+    };
+  });
+
+  const itemNames = ['Hard Hat', 'Safety Vest', 'Hammer', 'Drill', 'Measuring Tape', 'Level', 'Shovel', 'Safety Boots', 'Gloves', 'Goggles'];
+  items = [];
+  workers.forEach(w => {
+    const count = Math.floor(Math.random() * 3);
+    for (let j = 0; j < count; j++) {
+      const returned = Math.random() > 0.5;
+      const it = {
+        id: 'IT' + String(items.length + 1).padStart(4, '0'),
+        workerId: w.id,
+        workerName: w.name,
+        name: itemNames[Math.floor(Math.random() * itemNames.length)],
+        qty: 1 + Math.floor(Math.random() * 3),
+        category: ['Safety Gear', 'Tools', 'Equipment'][Math.floor(Math.random() * 3)],
+        issuedOn: new Date(now.getTime() - Math.random() * 7 * 86400000).toLocaleDateString(),
+        returned,
+        notes: '',
+      };
+      items.push(it);
+      w.items.push(it.id);
+    }
+  });
+
+  addAudit('System', 'Initialized', 'Demo data loaded');
+}
+
+function addAudit(user, action, details) {
+  auditLog.unshift({ time: new Date().toLocaleTimeString(), user: user || 'System', action, details });
+  if (auditLog.length > 100) auditLog.pop();
+}
+
+// ==================== AUTH ====================
+function doLogin() {
+  const u = document.getElementById('loginUser').value;
+  const p = document.getElementById('loginPass').value;
+  const found = systemUsers.find(x => x.username === u && x.password === p);
+  if (found) {
+    currentUser = found;
+    found.lastLogin = new Date().toLocaleString();
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('sidebarUserAvatar').textContent = found.name[0];
+    document.getElementById('sidebarUserName').textContent = found.name;
+    document.getElementById('sidebarUserRole').textContent = ROLES[found.role];
+    if (found.role !== 'admin') {
+      document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+      document.getElementById('addWorkerBtn').style.display = found.role === 'viewer' ? 'none' : '';
+    }
+    addAudit(found.username, 'Login', 'Authenticated successfully');
+    initApp();
+    showToast('✅', `Welcome back, ${found.name}!`);
+  } else {
+    showToast('❌', 'Invalid username or password');
+  }
+}
+
+function doLogout() {
+  addAudit(currentUser?.username, 'Logout', 'Session ended');
+  currentUser = null;
+  document.getElementById('loginPage').style.display = 'flex';
+}
+
+// ==================== NAV ====================
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) { el.classList.add('active'); el.classList.remove('page-animate'); void el.offsetWidth; el.classList.add('page-animate'); }
+  event?.currentTarget?.classList.add('active');
+  const titles = { dashboard: 'Dashboard', workers: 'Worker Registry', attendance: 'Attendance', items: 'Items Tracker', search: 'Search & Lookup', reports: 'Daily Reports', users: 'User Management', audit: 'Audit Trail' };
+  document.getElementById('pageTitle').textContent = titles[page] || page;
+  closeSidebar();
+  if (page === 'workers') renderWorkers();
+  if (page === 'attendance') renderAttendance();
+  if (page === 'items') renderItems();
+  if (page === 'reports') { const rd = document.getElementById('reportDate'); if (!rd.value) rd.value = new Date().toISOString().split('T')[0]; }
+  if (page === 'users') renderUsers();
+  if (page === 'audit') renderAudit();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+// ==================== DASHBOARD ====================
+function initApp() {
+  updateStats();
+  renderDashboardCharts();
+  renderActivityFeed();
+  renderWorkers();
+  renderAttendance();
+  renderItems();
+  renderUsers();
+  renderAudit();
+  populateCongDropdowns();
+  updateClock();
+  setInterval(updateClock, 1000);
+  document.getElementById('attDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
+}
+
+function updateStats() {
+  const present = workers.filter(w => w.status === 'present' || w.status === 'late').length;
+  const out = workers.filter(w => w.status === 'out').length;
+  const late = workers.filter(w => w.status === 'late').length;
+  const absent = workers.filter(w => w.status === 'absent').length;
+  const todayItems = items.filter(it => it.issuedOn === new Date().toLocaleDateString()).length;
+
+  document.getElementById('st-total').textContent = workers.length;
+  document.getElementById('st-present').textContent = present;
+  document.getElementById('st-out').textContent = out;
+  document.getElementById('st-late').textContent = late;
+  document.getElementById('st-absent').textContent = absent;
+  document.getElementById('st-items').textContent = todayItems;
+  document.getElementById('workerCount').textContent = workers.length;
+}
+
+function renderDashboardCharts() {
+  // Weekly Attendance
+  const ctx1 = document.getElementById('attendanceChart').getContext('2d');
+  new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      datasets: [
+        { label: 'Present', data: [10, 11, 9, 12, 11, 8, 5], backgroundColor: '#22c55e' },
+        { label: 'Late', data: [2, 1, 3, 1, 2, 1, 0], backgroundColor: '#f97316' },
+        { label: 'Absent', data: [1, 1, 1, 0, 1, 2, 6], backgroundColor: '#ef4444' },
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#9ca3af' } } }, scales: { x: { ticks: { color: '#6b7280' }, grid: { color: '#252a38' } }, y: { ticks: { color: '#6b7280' }, grid: { color: '#252a38' } } }, animation: { duration: 800 } }
+  });
+
+  // Congregation breakdown
+  const congs = {};
+  workers.forEach(w => { congs[w.congregation] = (congs[w.congregation] || 0) + 1; });
+  const ctx2 = document.getElementById('congregationChart').getContext('2d');
+  new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(congs),
+      datasets: [{ data: Object.values(congs), backgroundColor: ['#f59e0b', '#3b82f6', '#22c55e', '#f97316', '#a855f7'] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af', padding: 12, font: { size: 11 } } } } }
+  });
+}
+
+function renderActivityFeed() {
+  const feed = document.getElementById('activityFeed');
+  const events = [];
+  workers.forEach(w => {
+    if (w.checkin) events.push({ time: w.checkin, text: `${w.name} checked in`, type: 'in' });
+    if (w.checkout) events.push({ time: w.checkout, text: `${w.name} checked out`, type: 'out' });
+  });
+  items.slice(-5).forEach(it => {
+    events.push({ time: '09:30', text: `${it.name} issued to ${it.workerName}`, type: 'item' });
+  });
+  events.sort((a, b) => b.time.localeCompare(a.time));
+  feed.innerHTML = events.slice(0, 8).map(e => `
+    <div class="timeline-item">
+      <div class="tl-dot ${e.type}">${e.type === 'in' ? '↗' : e.type === 'out' ? '↘' : '🔧'}</div>
+      <div class="tl-content">
+        <div class="tl-title">${e.text}</div>
+        <div class="tl-time">${e.time}</div>
+      </div>
+    </div>
+  `).join('') || '<div class="empty-state"><div class="empty-msg">No activity yet today.</div></div>';
+}
+
+function updateClock() {
+  document.getElementById('clockDisplay').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// ==================== WORKERS ====================
+function renderWorkers(list) {
+  list = list || workers;
+  const body = document.getElementById('workersTableBody');
+  if (!list.length) { body.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">👷</div><div class="empty-msg">No workers found.</div></div></td></tr>'; return; }
+  body.innerHTML = list.map(w => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:10px;">
+        <div class="sr-avatar">${w.name[0]}</div>
+        <div><div style="font-weight:600;">${w.name}</div><div style="font-size:11px;color:var(--muted);">Reg: ${w.registeredOn}</div></div>
+      </div></td>
+      <td><span class="id-badge">${w.id}</span></td>
+      <td>${w.congregation}</td>
+      <td>${w.contact}</td>
+      <td>${w.age || '—'}</td>
+      <td>${statusBadge(w.status)}</td>
+      <td>${w.checkin || '<span style="color:var(--muted)">—</span>'}</td>
+      <td><span class="badge badge-admin">${w.items.length}</span></td>
+      <td class="no-print"><div class="actions-col">
+        <button class="btn btn-secondary btn-sm" onclick="viewWorker('${w.id}')">👁</button>
+        ${canEdit() ? `<button class="btn btn-success btn-sm" onclick="quickCheckin('${w.id}')">${w.checkin && !w.checkout ? '🚪 Out' : '✅ In'}</button>` : ''}
+        ${canEdit() ? `<button class="btn btn-danger btn-sm" onclick="deleteWorker('${w.id}')">🗑</button>` : ''}
+      </div></td>
+    </tr>
+  `).join('');
+}
+
+function filterWorkers() {
+  const q = document.getElementById('workerSearchInput').value.toLowerCase();
+  const cong = document.getElementById('workerFilterCong').value;
+  const status = document.getElementById('workerFilterStatus').value;
+  let list = workers.filter(w =>
+    (!q || w.name.toLowerCase().includes(q) || w.id.toLowerCase().includes(q) || w.contact.includes(q) || w.congregation.toLowerCase().includes(q)) &&
+    (!cong || w.congregation === cong) &&
+    (!status || w.status === status)
+  );
+  renderWorkers(list);
+}
+
+function addWorker() {
+  const name = document.getElementById('wName').value.trim();
+  const cong = document.getElementById('wCong').value.trim();
+  const contact = document.getElementById('wContact').value.trim();
+  const age = document.getElementById('wAge').value;
+  const itemsVal = document.getElementById('wItems').value.trim();
+  const notes = document.getElementById('wNotes').value.trim();
+  if (!name || !cong || !contact) { showToast('⚠️', 'Please fill required fields'); return; }
+  const w = {
+    id: 'BF' + String(2000 + workers.length + 1).padStart(4, '0'),
+    name, congregation: cong, contact, age: parseInt(age) || 0, notes,
+    registeredOn: new Date().toLocaleDateString(),
+    checkin: null, checkout: null, status: 'absent', items: [],
+  };
+  workers.push(w);
+  if (itemsVal) {
+    itemsVal.split(',').forEach(it => {
+      const item = { id: 'IT' + String(items.length + 1).padStart(4, '0'), workerId: w.id, workerName: w.name, name: it.trim(), qty: 1, category: 'Other', issuedOn: new Date().toLocaleDateString(), returned: false, notes: '' };
+      items.push(item); w.items.push(item.id);
+    });
+  }
+  closeModal('addWorkerModal');
+  updateStats(); renderWorkers(); populateCongDropdowns();
+  addAudit(currentUser?.username, 'Add Worker', `Registered ${name} (${w.id})`);
+  showToast('✅', `Worker ${name} registered!`);
+  ['wName','wCong','wContact','wAge','wItems','wNotes'].forEach(id => document.getElementById(id).value = '');
+}
+
+function deleteWorker(id) {
+  if (!confirm('Delete this worker?')) return;
+  const w = workers.find(x => x.id === id);
+  workers = workers.filter(x => x.id !== id);
+  updateStats(); renderWorkers();
+  addAudit(currentUser?.username, 'Delete Worker', `Removed ${w?.name} (${id})`);
+  showToast('🗑️', 'Worker removed');
+}
+
+function quickCheckin(id) {
+  const w = workers.find(x => x.id === id);
+  if (!w) return;
+  const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (!w.checkin) {
+    w.checkin = now; w.status = new Date().getHours() >= 8 ? 'late' : 'present';
+    showToast('✅', `${w.name} checked in at ${now}`);
+    addAudit(currentUser?.username, 'Check In', `${w.name} (${w.id}) at ${now}`);
+  } else if (!w.checkout) {
+    w.checkout = now; w.status = 'out';
+    showToast('🚪', `${w.name} checked out at ${now}`);
+    addAudit(currentUser?.username, 'Check Out', `${w.name} (${w.id}) at ${now}`);
+  }
+  updateStats(); renderWorkers(); renderAttendance(); renderActivityFeed();
+}
+
+function bulkCheckin() {
+  const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  let count = 0;
+  workers.forEach(w => { if (!w.checkin) { w.checkin = now; w.status = new Date().getHours() >= 8 ? 'late' : 'present'; count++; } });
+  updateStats(); renderAttendance(); showToast('⚡', `${count} workers checked in!`);
+  addAudit(currentUser?.username, 'Bulk Check-In', `${count} workers checked in`);
+}
+
+function viewWorker(id) {
+  selectedProfileId = id;
+  const w = workers.find(x => x.id === id);
+  if (!w) return;
+  const body = document.getElementById('workerProfileModalBody');
+  const workerItems = items.filter(it => it.workerId === id);
+  body.innerHTML = `
+    <div class="worker-profile-header">
+      <div class="worker-avatar-lg">${w.name[0]}</div>
+      <div class="worker-profile-info">
+        <div class="worker-name">${w.name}</div>
+        <div class="worker-id">🪪 ${w.id}</div>
+        <div style="margin-top:8px;">${statusBadge(w.status)}</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="worker-meta-grid" style="margin-bottom:20px;">
+        <div class="meta-item"><div class="meta-label">Congregation</div><div class="meta-val">${w.congregation}</div></div>
+        <div class="meta-item"><div class="meta-label">Contact</div><div class="meta-val">${w.contact}</div></div>
+        <div class="meta-item"><div class="meta-label">Age</div><div class="meta-val">${w.age || '—'}</div></div>
+        <div class="meta-item"><div class="meta-label">Registered</div><div class="meta-val">${w.registeredOn}</div></div>
+        <div class="meta-item"><div class="meta-label">Check In</div><div class="meta-val">${w.checkin || '—'}</div></div>
+        <div class="meta-item"><div class="meta-label">Check Out</div><div class="meta-val">${w.checkout || '—'}</div></div>
+      </div>
+      <div style="font-family:var(--font-display);font-size:15px;font-weight:700;margin-bottom:10px;">🔧 Items Issued (${workerItems.length})</div>
+      ${workerItems.length ? `<div class="items-list">${workerItems.map(it => `
+        <div class="item-row">
+          <div class="item-info"><div class="item-icon">🔧</div><div><div class="item-name">${it.name}</div><div class="item-meta">Qty: ${it.qty} · ${it.category} · ${it.issuedOn}</div></div></div>
+          <div class="item-status"><span class="badge ${it.returned ? 'badge-out' : 'badge-present'}">${it.returned ? 'Returned' : 'Issued'}</span></div>
+        </div>`).join('')}</div>` : '<div style="color:var(--muted);font-size:13px;">No items issued.</div>'}
+    </div>
+    <div class="modal-footer no-print">
+      ${canEdit() ? `<button class="btn btn-success btn-sm" onclick="quickCheckin('${id}');closeModal('workerProfileModal');">${w.checkin && !w.checkout ? '🚪 Check Out' : '✅ Check In'}</button>` : ''}
+      <button class="btn btn-secondary" onclick="closeModal('workerProfileModal')">Close</button>
+    </div>`;
+  openModal('workerProfileModal');
+}
+
+// ==================== ATTENDANCE ====================
+function renderAttendance(list) {
+  list = list || workers;
+  const cong = document.getElementById('attFilterCong').value;
+  const status = document.getElementById('attFilterStatus').value;
+  list = list.filter(w => (!cong || w.congregation === cong) && (!status || w.status === status));
+
+  const present = list.filter(w => w.status === 'present' || w.status === 'late').length;
+  const late = list.filter(w => w.status === 'late').length;
+  const absent = list.filter(w => w.status === 'absent').length;
+  document.getElementById('att-present').textContent = present;
+  document.getElementById('att-late').textContent = late;
+  document.getElementById('att-absent').textContent = absent;
+
+  let totalHours = 0, count = 0;
+  list.forEach(w => {
+    if (w.checkin && w.checkout) {
+      const h = parseFloat(calcHours(w.checkin, w.checkout));
+      if (!isNaN(h)) { totalHours += h; count++; }
+    }
+  });
+  document.getElementById('att-hours').textContent = count ? (totalHours / count).toFixed(1) + 'h' : '—';
+
+  const body = document.getElementById('attendanceTableBody');
+  if (!list.length) { body.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-msg">No records found.</div></div></td></tr>'; return; }
+  body.innerHTML = list.map(w => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:10px;"><div class="sr-avatar">${w.name[0]}</div><div style="font-weight:600;">${w.name}</div></div></td>
+      <td><span class="id-badge">${w.id}</span></td>
+      <td>${w.congregation}</td>
+      <td>${w.checkin || '<span style="color:var(--muted)">Not checked in</span>'}</td>
+      <td>${w.checkout || '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${w.checkin && w.checkout ? calcHours(w.checkin, w.checkout) + 'h' : '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${statusBadge(w.status)}</td>
+      <td class="no-print"><div class="actions-col">
+        ${canEdit() ? `<button class="btn btn-success btn-sm" onclick="quickCheckin('${w.id}')">${w.checkin && !w.checkout ? '🚪 Out' : '✅ In'}</button>` : ''}
+        <button class="btn btn-secondary btn-sm" onclick="viewWorker('${w.id}')">👁</button>
+      </div></td>
+    </tr>
+  `).join('');
+}
+
+function calcHours(checkin, checkout) {
+  try {
+    const parse = t => { const [h, m] = t.split(':'); return parseInt(h) * 60 + parseInt(m); };
+    const diff = (parse(checkout) - parse(checkin)) / 60;
+    return diff > 0 ? diff.toFixed(1) : '0.0';
+  } catch { return '—'; }
+}
+
+// ==================== ITEMS ====================
+function renderItems(list) {
+  list = list || items;
+  const q = document.getElementById('itemSearch')?.value?.toLowerCase() || '';
+  const wid = document.getElementById('itemFilterWorker')?.value || '';
+  if (q || wid) list = list.filter(it => (!q || it.name.toLowerCase().includes(q) || it.workerName.toLowerCase().includes(q)) && (!wid || it.workerId === wid));
+
+  document.getElementById('items-total').textContent = items.length;
+  document.getElementById('items-returned').textContent = items.filter(it => it.returned).length;
+
+  const body = document.getElementById('itemsTableBody');
+  if (!list.length) { body.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🔧</div><div class="empty-msg">No items found.</div></div></td></tr>'; return; }
+  body.innerHTML = list.map(it => `
+    <tr>
+      <td><strong>${it.name}</strong><div style="font-size:11px;color:var(--muted);">${it.category}</div></td>
+      <td>${it.workerName}<div style="font-size:11px;color:var(--muted);">${it.workerId}</div></td>
+      <td>${it.issuedOn}</td>
+      <td>${it.qty}</td>
+      <td><span class="badge ${it.returned ? 'badge-out' : 'badge-present'}">${it.returned ? 'Returned' : 'Issued'}</span></td>
+      <td>${it.notes || '—'}</td>
+      <td class="no-print">${canEdit() && !it.returned ? `<button class="btn btn-secondary btn-sm" onclick="returnItem('${it.id}')">↩ Return</button>` : ''}</td>
+    </tr>
+  `).join('');
+}
+
+function filterItems() { renderItems(); }
+
+function issueItem() {
+  const wid = document.getElementById('issueWorker').value;
+  const name = document.getElementById('issueName').value.trim();
+  const qty = parseInt(document.getElementById('issueQty').value) || 1;
+  const cat = document.getElementById('issueCat').value;
+  const notes = document.getElementById('issueNotes').value.trim();
+  if (!wid || !name) { showToast('⚠️', 'Please select worker and item name'); return; }
+  const w = workers.find(x => x.id === wid);
+  const item = { id: 'IT' + String(items.length + 1).padStart(4, '0'), workerId: wid, workerName: w?.name || '', name, qty, category: cat, issuedOn: new Date().toLocaleDateString(), returned: false, notes };
+  items.push(item);
+  if (w) w.items.push(item.id);
+  closeModal('issueItemModal');
+  renderItems(); updateStats();
+  addAudit(currentUser?.username, 'Issue Item', `${name} issued to ${w?.name}`);
+  showToast('✅', `${name} issued to ${w?.name}`);
+  ['issueName','issueNotes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('issueQty').value = 1;
+}
+
+function returnItem(id) {
+  const it = items.find(x => x.id === id);
+  if (it) { it.returned = true; renderItems(); addAudit(currentUser?.username, 'Return Item', `${it.name} returned from ${it.workerName}`); showToast('↩️', `${it.name} marked as returned`); }
+}
+
+// ==================== SEARCH ====================
+function doVlookup() {
+  const q = document.getElementById('vlookupInput').value.toLowerCase().trim();
+  const results = document.getElementById('vlookupResults');
+  if (!q) { results.classList.remove('open'); document.getElementById('workerProfileSection').style.display = 'none'; return; }
+  const matches = workers.filter(w =>
+    w.name.toLowerCase().includes(q) || w.id.toLowerCase().includes(q) ||
+    w.contact.includes(q) || w.congregation.toLowerCase().includes(q)
+  ).slice(0, 8);
+  if (!matches.length) { results.innerHTML = '<div class="search-result-item"><div class="sr-meta">No workers found</div></div>'; results.classList.add('open'); return; }
+  results.innerHTML = matches.map(w => `
+    <div class="search-result-item" onclick="selectSearchResult('${w.id}')">
+      <div class="sr-avatar">${w.name[0]}</div>
+      <div><div class="sr-name">${highlight(w.name, q)}</div><div class="sr-meta">${w.id} · ${w.congregation} · ${w.contact}</div></div>
+      <div style="margin-left:auto;">${statusBadge(w.status)}</div>
+    </div>
+  `).join('');
+  results.classList.add('open');
+}
+
+function highlight(text, q) {
+  const re = new RegExp(`(${q})`, 'gi');
+  return text.replace(re, '<mark style="background:rgba(245,158,11,0.3);color:inherit;border-radius:2px;">$1</mark>');
+}
+
+function selectSearchResult(id) {
+  document.getElementById('vlookupResults').classList.remove('open');
+  selectedProfileId = id;
+  showWorkerProfile(id);
+}
+
+function showWorkerProfile(id) {
+  const w = workers.find(x => x.id === id);
+  if (!w) return;
+  document.getElementById('workerProfileSection').style.display = 'block';
+  document.getElementById('profileHeader').innerHTML = `
+    <div class="worker-avatar-lg">${w.name[0]}</div>
+    <div class="worker-profile-info">
+      <div class="worker-name">${w.name}</div>
+      <div class="worker-id">🪪 ${w.id}</div>
+      <div style="margin-top:8px;">${statusBadge(w.status)}</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:10px;" class="no-print">
+      ${canEdit() ? `<button class="btn btn-success btn-sm" onclick="quickCheckin('${w.id}')">${w.checkin && !w.checkout ? '🚪 Out' : '✅ In'}</button>` : ''}
+      <button class="btn btn-secondary btn-sm" onclick="openModal('issueItemModal')">🔧 Issue Item</button>
+    </div>`;
+
+  const workerItems = items.filter(it => it.workerId === id);
+  document.getElementById('profileInfo').innerHTML = `
+    <div class="worker-meta-grid">
+      <div class="meta-item"><div class="meta-label">Congregation</div><div class="meta-val">${w.congregation}</div></div>
+      <div class="meta-item"><div class="meta-label">Contact</div><div class="meta-val">${w.contact}</div></div>
+      <div class="meta-item"><div class="meta-label">Age</div><div class="meta-val">${w.age || '—'}</div></div>
+      <div class="meta-item"><div class="meta-label">Registered</div><div class="meta-val">${w.registeredOn}</div></div>
+      <div class="meta-item"><div class="meta-label">Check In</div><div class="meta-val">${w.checkin || '—'}</div></div>
+      <div class="meta-item"><div class="meta-label">Check Out</div><div class="meta-val">${w.checkout || '—'}</div></div>
+    </div>
+    ${w.notes ? `<div style="margin-top:16px;padding:12px;background:var(--panel2);border-radius:8px;font-size:13px;color:var(--muted);">${w.notes}</div>` : ''}`;
+
+  document.getElementById('profileAttendance').innerHTML = `
+    <div class="timeline">
+      ${w.checkin ? `<div class="timeline-item"><div class="tl-dot in">↗</div><div class="tl-content"><div class="tl-title">Checked In</div><div class="tl-time">${w.checkin} today${w.status === 'late' ? ' <span style="color:var(--warning);">(Late)</span>' : ''}</div></div></div>` : ''}
+      ${w.checkout ? `<div class="timeline-item"><div class="tl-dot out">↘</div><div class="tl-content"><div class="tl-title">Checked Out</div><div class="tl-time">${w.checkout} today · ${calcHours(w.checkin, w.checkout)} hours</div></div></div>` : ''}
+      ${!w.checkin ? '<div style="color:var(--muted);font-size:13px;">No attendance record for today.</div>' : ''}
+    </div>`;
+
+  document.getElementById('profileItems').innerHTML = workerItems.length ? `
+    <div class="items-list">${workerItems.map(it => `
+      <div class="item-row">
+        <div class="item-info"><div class="item-icon">🔧</div><div><div class="item-name">${it.name}</div><div class="item-meta">Qty: ${it.qty} · ${it.category} · ${it.issuedOn}</div></div></div>
+        <span class="badge ${it.returned ? 'badge-out' : 'badge-present'}">${it.returned ? 'Returned' : 'Issued'}</span>
+      </div>`).join('')}</div>` : '<div style="color:var(--muted);font-size:13px;">No items issued to this worker.</div>';
+
+  document.getElementById('profileQr').innerHTML = `
+    <div style="text-align:center;padding:20px;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">QR code for quick check-in/out</div>
+      <div class="qr-display">${generateQR(w.id)}</div>
+      <div style="margin-top:12px;font-family:monospace;font-size:18px;letter-spacing:3px;color:var(--accent);">${w.id}</div>
+    </div>`;
+}
+
+function generateQR(id) {
+  // Simple visual QR-like pattern for display
+  const seed = id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  let cells = '';
+  for (let i = 0; i < 100; i++) {
+    const dark = ((seed * (i + 1) * 31) % 17 < 8) || (i < 3 && (i % 10 < 3)) || (i >= 90 && i % 10 < 3);
+    cells += `<div class="qr-cell" style="background:${dark ? '#000' : '#fff'};"></div>`;
+  }
+  return `<div class="qr-grid">${cells}</div>`;
+}
+
+function switchProfileTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  ['info','attendance','items','qr'].forEach(t => document.getElementById('profile' + t.charAt(0).toUpperCase() + t.slice(1)).style.display = t === tab ? '' : 'none');
+}
+
+// ==================== REPORTS ====================
+function generateReport() {
+  const date = document.getElementById('reportDate').value || new Date().toLocaleDateString();
+  const cong = document.getElementById('reportCong').value;
+  let list = cong ? workers.filter(w => w.congregation === cong) : workers;
+
+  const present = list.filter(w => w.status !== 'absent');
+  const absent = list.filter(w => w.status === 'absent');
+  const todayItems = items.filter(it => !cong || workers.find(w => w.id === it.workerId)?.congregation === cong);
+  const totalHours = present.reduce((s, w) => {
+    if (w.checkin && w.checkout) { const h = parseFloat(calcHours(w.checkin, w.checkout)); return s + (isNaN(h) ? 0 : h); }
+    return s;
+  }, 0);
+
+  document.getElementById('reportOutput').innerHTML = `
+    <div class="card">
+      <div class="card-header" style="background:linear-gradient(135deg,rgba(245,158,11,0.1),transparent);">
+        <div>
+          <div class="card-title" style="font-size:22px;">📋 Daily Workforce Report</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px;">Generated: ${new Date().toLocaleString()} · Project Site Alpha${cong ? ' · ' + cong : ''}</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="report-section">
+          <div class="report-heading">📊 Attendance Summary</div>
+          <div class="summary-row"><span class="summary-label">Total Workers</span><span class="summary-val">${list.length}</span></div>
+          <div class="summary-row"><span class="summary-label">Present</span><span class="summary-val" style="color:var(--success)">${list.filter(w=>w.status==='present').length}</span></div>
+          <div class="summary-row"><span class="summary-label">Late Arrivals</span><span class="summary-val" style="color:var(--warning)">${list.filter(w=>w.status==='late').length}</span></div>
+          <div class="summary-row"><span class="summary-label">Checked Out</span><span class="summary-val" style="color:var(--muted)">${list.filter(w=>w.status==='out').length}</span></div>
+          <div class="summary-row"><span class="summary-label">Absent</span><span class="summary-val" style="color:var(--danger)">${absent.length}</span></div>
+          <div class="summary-row"><span class="summary-label">Total Hours Worked</span><span class="summary-val">${totalHours.toFixed(1)}h</span></div>
+          <div class="summary-row"><span class="summary-label">Items Issued Today</span><span class="summary-val">${todayItems.length}</span></div>
+        </div>
+        <div class="report-section">
+          <div class="report-heading">👷 Workers Present</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>ID</th><th>Congregation</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Status</th></tr></thead>
+              <tbody>${present.map(w => `<tr><td>${w.name}</td><td>${w.id}</td><td>${w.congregation}</td><td>${w.checkin || '—'}</td><td>${w.checkout || '—'}</td><td>${w.checkin && w.checkout ? calcHours(w.checkin, w.checkout) + 'h' : '—'}</td><td>${statusBadge(w.status)}</td></tr>`).join('')}</tbody>
+            </table>
+          </div>
+        </div>
+        ${absent.length ? `<div class="report-section">
+          <div class="report-heading">❌ Absent Workers</div>
+          <div class="table-wrap"><table><thead><tr><th>Name</th><th>ID</th><th>Congregation</th><th>Contact</th></tr></thead>
+          <tbody>${absent.map(w => `<tr><td>${w.name}</td><td>${w.id}</td><td>${w.congregation}</td><td>${w.contact}</td></tr>`).join('')}</tbody></table></div>
+        </div>` : ''}
+        <div class="report-section">
+          <div class="report-heading">🔧 Items Issued</div>
+          ${todayItems.length ? `<div class="table-wrap"><table><thead><tr><th>Item</th><th>Worker</th><th>Qty</th><th>Category</th><th>Status</th></tr></thead>
+          <tbody>${todayItems.map(it => `<tr><td>${it.name}</td><td>${it.workerName}</td><td>${it.qty}</td><td>${it.category}</td><td>${it.returned ? 'Returned' : 'Issued'}</td></tr>`).join('')}</tbody></table></div>` : '<div style="color:var(--muted);font-size:13px;">No items issued today.</div>'}
+        </div>
+        <div style="margin-top:30px;text-align:center;color:var(--muted);font-size:11px;border-top:1px solid var(--border);padding-top:16px;">
+          🏗️ BuildForce — Construction Workforce Management System · Report Date: ${date}
+        </div>
+      </div>
+    </div>`;
+  showToast('📋', 'Report generated successfully');
+}
+
+function exportCSV() {
+  const rows = [['Name', 'ID', 'Congregation', 'Contact', 'Age', 'Status', 'Check In', 'Check Out', 'Hours', 'Items']];
+  workers.forEach(w => {
+    rows.push([w.name, w.id, w.congregation, w.contact, w.age, w.status, w.checkin || '', w.checkout || '', w.checkin && w.checkout ? calcHours(w.checkin, w.checkout) : '', w.items.length]);
+  });
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'workforce_report_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  showToast('📥', 'CSV exported!');
+}
+
+// ==================== USERS ====================
+function renderUsers() {
+  const body = document.getElementById('usersTableBody');
+  body.innerHTML = systemUsers.map(u => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:10px;"><div class="user-avatar" style="background:${u.role === 'admin' ? 'linear-gradient(135deg,var(--accent),var(--warning))' : u.role === 'supervisor' ? 'linear-gradient(135deg,var(--accent2),#6366f1)' : 'linear-gradient(135deg,var(--muted),var(--subtle))'};">${u.name[0]}</div><span style="font-weight:600;">${u.name}</span></div></td>
+      <td style="font-family:monospace;">${u.username}</td>
+      <td><span class="badge badge-${u.role}">${ROLES[u.role]}</span></td>
+      <td style="color:var(--muted);font-size:12px;">${u.lastLogin}</td>
+      <td class="no-print"><div class="actions-col">
+        ${currentUser?.role === 'admin' && u.id !== currentUser?.id ? `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}')">🗑</button>` : ''}
+      </div></td>
+    </tr>
+  `).join('');
+}
+
+function addUser() {
+  const name = document.getElementById('uName').value.trim();
+  const username = document.getElementById('uUser').value.trim();
+  const password = document.getElementById('uPass').value.trim();
+  const role = document.getElementById('uRole').value;
+  if (!name || !username || !password) { showToast('⚠️', 'Fill all fields'); return; }
+  if (systemUsers.find(u => u.username === username)) { showToast('⚠️', 'Username already exists'); return; }
+  systemUsers.push({ id: 'u' + Date.now(), name, username, password, role, lastLogin: 'Never' });
+  closeModal('addUserModal');
+  renderUsers();
+  addAudit(currentUser?.username, 'Add User', `Created ${username} (${role})`);
+  showToast('✅', `User ${name} added`);
+}
+
+function deleteUser(id) {
+  if (!confirm('Remove this user?')) return;
+  const u = systemUsers.find(x => x.id === id);
+  systemUsers = systemUsers.filter(x => x.id !== id);
+  renderUsers();
+  addAudit(currentUser?.username, 'Delete User', `Removed ${u?.username}`);
+  showToast('🗑️', 'User removed');
+}
+
+// ==================== AUDIT ====================
+function renderAudit() {
+  const body = document.getElementById('auditTableBody');
+  body.innerHTML = auditLog.map(e => `<tr><td style="font-family:monospace;font-size:11px;color:var(--muted);">${e.time}</td><td><strong>${e.user}</strong></td><td><span class="badge badge-admin">${e.action}</span></td><td style="font-size:12px;color:var(--muted);">${e.details}</td></tr>`).join('');
+}
+
+// ==================== HELPERS ====================
+function statusBadge(status) {
+  const map = { present: ['badge-present', '● Present'], out: ['badge-out', '○ Checked Out'], late: ['badge-late', '◐ Late'], absent: ['badge-absent', '✕ Absent'] };
+  const [cls, label] = map[status] || ['badge-out', status];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+function canEdit() { return currentUser?.role === 'admin' || currentUser?.role === 'supervisor'; }
+
+function populateCongDropdowns() {
+  const congs = [...new Set(workers.map(w => w.congregation))];
+  ['workerFilterCong','attFilterCong','reportCong','itemFilterWorker'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (id === 'itemFilterWorker') {
+      el.innerHTML = '<option value="">All Workers</option>' + workers.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+    } else {
+      el.innerHTML = '<option value="">All Congregations</option>' + congs.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+  });
+  const datalist = document.getElementById('congList');
+  if (datalist) datalist.innerHTML = congs.map(c => `<option value="${c}">`).join('');
+
+  // Populate issue worker dropdown
+  const iw = document.getElementById('issueWorker');
+  if (iw) iw.innerHTML = '<option value="">Select worker...</option>' + workers.map(w => `<option value="${w.id}">${w.name} (${w.id})</option>`).join('');
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function showToast(icon, msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  if (e.ctrlKey && e.key === 'f') { e.preventDefault(); showPage('search'); document.getElementById('vlookupInput')?.focus(); }
+});
+
+// Init
+initData();
+</script>
+</body>
+</html>
